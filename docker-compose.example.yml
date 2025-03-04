@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # This is just an example of how to add the MCP server to your existing Crawlab setup
+  # You should integrate this with your actual Crawlab docker-compose.yml file
+  
+  mcp-server:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - CRAWLAB_API_BASE_URL=http://backend:8000/api
+      - CRAWLAB_API_TOKEN=${CRAWLAB_API_TOKEN}
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - crawlab-network
+
+  # These are placeholders for your existing Crawlab services
+  # Replace with your actual Crawlab configuration
+  backend:
+    image: crawlabteam/crawlab:latest
+    # ... other configuration
+
+networks:
+  crawlab-network:
+    driver: bridge 
