@@ -11,7 +11,31 @@ The MCP server provides a standardized way for AI applications to access Crawlab
 - File management (read, write)
 - Resource access (spiders, tasks)
 
-## Setup
+## Installation and Usage
+
+### Option 1: Install as a Python package
+
+You can install the MCP server as a Python package, which provides a convenient CLI:
+
+```bash
+# Install from source
+pip install -e .
+
+# Or install from GitHub (when available)
+# pip install git+https://github.com/crawlab-team/crawlab-mcp-server.git
+```
+
+After installation, you can use the CLI:
+
+```bash
+# Start the MCP server
+crawlab-mcp server [--spec PATH_TO_SPEC] [--host HOST] [--port PORT]
+
+# Start the MCP client
+crawlab-mcp client SERVER_URL
+```
+
+### Option 2: Running Locally
 
 ### Prerequisites
 
@@ -115,7 +139,3 @@ The MCP server can be used with any AI application that supports the Model Conte
 - `get_spider_files`: List files for a spider
 - `get_spider_file`: Get content of a specific file
 - `save_spider_file`: Save content to a file
-
-## License
-
-Same as Crawlab 

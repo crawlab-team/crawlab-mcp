@@ -9,3 +9,4 @@ tool_descriptions.json
 *.pyo
 *.pyd
 __pycache__
+*.egg-info

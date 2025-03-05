@@ -2,6 +2,35 @@
 requires = ["setuptools>=42.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "crawlab-mcp"
+version = "0.7.0"
+description = "Crawlab Model Control Protocol (MCP) - A framework for AI agents"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Crawlab Team", email = "support@crawlab.org"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "fastapi>=0.95.0",
+    "uvicorn>=0.21.1",
+    "aiohttp>=3.8.4",
+    "python-dotenv>=1.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/crawlab-team/crawlab-mcp-server"
+Issues = "https://github.com/crawlab-team/crawlab-mcp-server/issues"
+
+[project.scripts]
+crawlab-mcp = "crawlab.mcp.cli:main"
+
 [tool.ruff]
 # Enable Pyflakes (`F`), pycodestyle (`E`), isort (`I`), pydocstyle (`D`)
 select = ["E", "F", "I"]
@@ -22,7 +51,6 @@ line-length = 100
 # Sort imports
 [tool.ruff.isort]
 case-sensitive = true
-known-first-party = ["openapi"]
 
 # Docstring settings
 [tool.ruff.pydocstyle]

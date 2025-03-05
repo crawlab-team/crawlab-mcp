@@ -1,0 +1,62 @@
+---
+description: MCP Server/Client Communication Architecture
+globs: 
+alwaysApply: false
+---
+## MCP Server/Client Communication Architecture
+
+### Overview
+
+The MCP system consists of:
+1. **Server**: Handles API requests and tool execution
+2. **Client**: Communicates with both the server and LLM providers
+3. **LLM Providers**: Process natural language queries and generate tool calls
+4. **OpenAPI Parser**: Converts API specifications into executable tools
+
+### Communication Flow
+
+1. **Client Initialization**:
+   - The client connects to the MCP server via SSE (Server-Sent Events)
+   - It initializes an LLM provider (OpenAI or compatible)
+
+2. **Query Processing**:
+   - When a user sends a query, the client identifies the intent
+   - Based on the intent, it selects appropriate tools to provide to the LLM
+
+3. **LLM Interaction**:
+   - The client sends the query and available tools to the LLM
+   - The LLM generates a response, potentially including tool calls
+
+4. **Tool Execution**:
+   - When the LLM calls a tool, the client forwards the request to the MCP server
+   - The server executes the corresponding API call
+   - Results are returned to the client, which then sends them back to the LLM
+
+5. **Response Generation**:
+   - The LLM processes the tool results and generates a final response
+   - The client returns this response to the user
+
+### Key Components
+
+#### Server (server.py)
+- Uses FastMCP to handle client connections
+- Dynamically generates tools from OpenAPI specifications
+- Registers tools that map to API endpoints
+- Supports SSE transport for real-time communication
+
+#### Client (client.py)
+- Connects to the MCP server via SSE
+- Manages communication with LLM providers
+- Processes user queries and identifies intent
+- Handles tool calls from the LLM and forwards them to the server
+- Manages the conversation flow between user, LLM, and tools
+
+#### LLM Providers (openai_compatible.py)
+- Provides a unified interface to various LLM services
+- Handles chat completion requests with tool support
+- Manages API keys and authentication
+
+#### API Execution (http.py)
+- Handles actual HTTP requests to the Crawlab API
+- Manages authentication and token handling
+- Processes API responses

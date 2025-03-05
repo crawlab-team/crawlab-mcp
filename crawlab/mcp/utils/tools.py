@@ -1,26 +1,13 @@
-import os
-from typing import Dict, Optional
+import re
+from inspect import Parameter, signature
+from typing import Dict
 
-import requests
-
-
-def api_request(
-    method: str,
-    endpoint: str,
-    data: Optional[Dict] = None,
-    params: Optional[Dict] = None,
-) -> Dict:
-    """Make a request to the Crawlab API."""
-    url = f"{CRAWLAB_API_BASE_URL}/{endpoint}"
-    headers = {
-        "Authorization": f"Bearer {CRAWLAB_API_TOKEN}",
-        "Content-Type": "application/json",
-    }
-
-    response = requests.request(method=method, url=url, headers=headers, json=data, params=params)
-
-    response.raise_for_status()
-    return response.json()
+from crawlab.mcp.utils.constants import (
+    MODELS_WITH_TOOL_SUPPORT,
+    MODEL_TOOL_SUPPORT_PATTERNS,
+    PYTHON_KEYWORDS,
+)
+from crawlab.mcp.utils.http import api_request
 
 
 def create_tool_function(tool_name, method, path, param_dict):
@@ -119,9 +106,6 @@ def create_tool_function(tool_name, method, path, param_dict):
                 data=body_data if body_data else None,
             ).get("data", {})
 
-        # Create a correctly formatted signature for the wrapper function
-        from inspect import Parameter, signature
-
         # Build parameter list for function signature
         parameters = []
         for param_name, param_type in required_params:
@@ -147,47 +131,6 @@ def create_tool_function(tool_name, method, path, param_dict):
         return wrapper
 
     return create_wrapper()
-
-
-CRAWLAB_API_BASE_URL = os.getenv("CRAWLAB_API_BASE_URL", "http://localhost:8080/api")
-CRAWLAB_API_TOKEN = os.getenv("CRAWLAB_API_TOKEN", "")
-PYTHON_KEYWORDS = {
-    "False",
-    "None",
-    "True",
-    "and",
-    "as",
-    "assert",
-    "async",
-    "await",
-    "break",
-    "class",
-    "continue",
-    "def",
-    "del",
-    "elif",
-    "else",
-    "except",
-    "finally",
-    "for",
-    "from",
-    "global",
-    "if",
-    "import",
-    "in",
-    "is",
-    "lambda",
-    "nonlocal",
-    "not",
-    "or",
-    "pass",
-    "raise",
-    "return",
-    "try",
-    "while",
-    "with",
-    "yield",
-}
 
 
 def list_tags(resolved_spec):
@@ -247,3 +190,25 @@ def list_tags(resolved_spec):
         return {"tags": tags_list}
 
     return wrapper
+
+
+def model_supports_tools(model_name: str) -> bool:
+    """
+    Check if a model supports tools/function calling based on regex patterns.
+
+    Args:
+        model_name: Name of the model to check.
+
+    Returns:
+        True if the model supports tools, False otherwise.
+    """
+    # First check the legacy hard-coded dictionary
+    if model_name in MODELS_WITH_TOOL_SUPPORT:
+        return MODELS_WITH_TOOL_SUPPORT[model_name]
+
+    # Then check regex patterns
+    for pattern in MODEL_TOOL_SUPPORT_PATTERNS:
+        if re.match(pattern, model_name):
+            return True
+
+    return False
