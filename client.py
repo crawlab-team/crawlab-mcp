@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from mcp import ClientSession
 from mcp.client.sse import sse_client
-from openai import AzureOpenAI
+from openai import AzureOpenAI, NotGiven
 
 load_dotenv()  # load environment variables from .env
 
@@ -24,6 +24,8 @@ class MCPClient:
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
         self.connection_type = "sse"  # Default connection type is now SSE
+        self.tags = []
+        self.tools = []
 
         # Initialize Azure OpenAI client with API key from environment variables
         self.openai = AzureOpenAI(
@@ -65,41 +67,80 @@ class MCPClient:
 
         # List available tools
         response = await self.session.list_tools()
-        tools = response.tools
+        self.tools = response.tools
 
         # List available tags
         response = await self.session.call_tool("list_tags")
-        print(json.dumps(json.loads(response.content[0].text)["tags"], indent=2))
+        self.tags = json.loads(response.content[0].text)["tags"]
 
-        logger.info(f"Connected to server with tools: {[tool.name for tool in tools]}")
-        print("\nConnected to server with tools:", [tool.name for tool in tools])
+        logger.info(f"Connected to mcp server at {server_url}")
 
         return self.session
+
+    async def identify_user_intent(self, user_query: str) -> str:
+        """Identify the user's intent based on the query"""
+        messages = [
+            {
+                "role": "system",
+                "content": f"""
+                You should identify the user's intent based on the user query and available tags with tools.
+                
+                If the user query contains any of the available tools, you should return at most 5 the potential related tool names. Otherwise, you should return "Generic".
+                
+                No other explanation is needed in the output.
+                
+                Output Format:
+                - If the user query contains any of the available tools: ["Tool1", "Tool2", "Tool3"]
+                - Otherwise: "Generic"
+                
+                Available Tags with Tools: 
+                {json.dumps(self.tags)}
+            """,
+            },
+            {"role": "user", "content": user_query},
+        ]
+
+        model_name = os.getenv("AZURE_OPENAI_MODEL_NAME")
+        response = self.openai.chat.completions.create(
+            model=model_name,
+            messages=messages,
+        )
+
+        return response.choices[0].message.content
 
     async def process_query(self, query: str) -> str:
         """Process a query using Azure OpenAI and available tools"""
         messages = [{"role": "user", "content": query}]
 
-        response = await self.session.list_tools()
-        available_tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.inputSchema,
-                },
-            }
-            for tool in response.tools
-        ]
+        intent = await self.identify_user_intent(query)
+        print(intent)
+        if intent == "Generic":
+            available_tools = None
+            tool_choice = NotGiven()
+        else:
+            tools = json.loads(intent)
+            available_tools = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.inputSchema,
+                    },
+                }
+                for tool in self.tools
+                if tool.name in tools
+            ]
+            tool_choice = "auto"
 
         # Initial Azure OpenAI API call
+        print(available_tools)
         model_name = os.getenv("AZURE_OPENAI_MODEL_NAME")
         response = self.openai.chat.completions.create(
             model=model_name,
             messages=messages,
             tools=available_tools,
-            tool_choice="auto",
+            tool_choice=tool_choice,
         )
 
         # Process response and handle tool calls
@@ -110,11 +151,13 @@ class MCPClient:
         final_text.append(response_message.content or "")
 
         if response_message.tool_calls:
+            print(response_message.tool_calls)
             for tool_call in response_message.tool_calls:
                 function_name = tool_call.function.name
-                function_args = tool_call.function.arguments
+                function_args = json.loads(tool_call.function.arguments)
 
                 # Execute tool call
+                print(function_name, function_args)
                 result = await self.session.call_tool(function_name, function_args)
                 tool_results.append({"call": function_name, "result": result})
                 final_text.append(f"[Calling tool {function_name} with args {function_args}]")

@@ -188,3 +188,62 @@ PYTHON_KEYWORDS = {
     "with",
     "yield",
 }
+
+
+def list_tags(resolved_spec):
+    """List all available tags/endpoint groups in the API."""
+
+    def wrapper():
+        tags_dict = {}
+
+        # Extract tags from the top-level OpenAPI spec
+        for tag_info in resolved_spec.get("tags", []):
+            tag_name = tag_info.get("name", "")
+            tags_dict[tag_name] = {"description": tag_info.get("description", ""), "tools": []}
+
+        # If no tags are defined in the spec, initialize from operations
+        if not tags_dict:
+            for path, path_item in resolved_spec.get("paths", {}).items():
+                for method, operation in path_item.items():
+                    if method.lower() not in ["get", "post", "put", "delete", "patch"]:
+                        continue
+
+                    operation_tags = operation.get("tags", [])
+                    for tag in operation_tags:
+                        if tag not in tags_dict:
+                            tags_dict[tag] = {
+                                "description": f"Operations tagged with {tag}",
+                                "tools": [],
+                            }
+
+        # Populate tools under each tag
+        for path, path_item in resolved_spec.get("paths", {}).items():
+            for method, operation in path_item.items():
+                if method.lower() not in ["get", "post", "put", "delete", "patch"]:
+                    continue
+
+                operation_tags = operation.get("tags", [])
+                operation_id = operation.get("operationId")
+                summary = operation.get("summary", "")
+
+                if operation_id:
+                    tool_info = {
+                        "name": operation_id,
+                        "method": method.upper(),
+                        "summary": summary,
+                    }
+
+                    # Add tool to each tag it belongs to
+                    for tag in operation_tags:
+                        if tag in tags_dict:
+                            tags_dict[tag]["tools"].append(tool_info)
+
+        # Convert to list format for return
+        tags_list = [
+            {"name": name, "description": info["description"], "tools": info["tools"]}
+            for name, info in tags_dict.items()
+        ]
+
+        return {"tags": tags_list}
+
+    return wrapper
