@@ -1,0 +1,3 @@
+[submodule "crawlab-openapi"]
+	path = crawlab-openapi
+	url = git@github.com:crawlab-team/crawlab-openapi.git
