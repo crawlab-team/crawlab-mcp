@@ -1,3 +1,11 @@
 .idea
 .DS_Store
 .venv
+tool_descriptions.json
+.env
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__

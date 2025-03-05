@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=42.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+# Enable Pyflakes (`F`), pycodestyle (`E`), isort (`I`), pydocstyle (`D`)
+select = ["E", "F", "I"]
+ignore = [
+    # Allow non-abstract empty methods in abstract base classes
+    "B027",
+    # Allow boolean positional values in function calls, like `dict.get(x, False)`
+    "FBT003",
+    # Allow print statements
+    "T201",
+    # D203 (one-blank-line-before-class) and D211 (no-blank-line-before-class) are incompatible
+    "D203",
+]
+
+# Maximum line length
+line-length = 100
+
+# Sort imports
+[tool.ruff.isort]
+case-sensitive = true
+known-first-party = ["openapi"]
+
+# Docstring settings
+[tool.ruff.pydocstyle]
+convention = "google"  # Use Google-style docstrings
+
+[tool.ruff.per-file-ignores]
+# Ignore imported but unused in __init__.py files
+"__init__.py" = ["F401"]
+# Ignore some errors for tests
+"test_*.py" = ["D100", "D101", "D102", "D103"]
+
+[tool.ruff.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.extend-per-file-ignores]
+"server.py" = ["E501"]  # Ignore long lines in server.py 
