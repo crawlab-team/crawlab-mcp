@@ -2,8 +2,8 @@
 OpenAI-compatible provider implementation for various LLM services that follow the OpenAI API format.
 """
 
-import os
 import logging
+import os
 import time
 from typing import Any, Dict, List, Optional, Union
 
@@ -11,7 +11,6 @@ from openai import OpenAI
 
 from ..utils.tools import model_supports_tools
 from .base import BaseLLMProvider
-
 
 # Configure logging for LLM providers
 logger = logging.getLogger(__name__)
@@ -54,18 +53,20 @@ class OpenAICompatibleProvider(BaseLLMProvider):
     async def initialize(self) -> None:
         """Initialize the OpenAI client."""
         logger.info(f"Initializing {self.provider_name} provider")
-        
+
         if not self.api_key:
-            logger.warning(f"No API key provided for {self.provider_name}. Attempting to use default credentials.")
-        
+            logger.warning(
+                f"No API key provided for {self.provider_name}. Attempting to use default credentials."
+            )
+
         if self.base_url:
             logger.info(f"Using custom base URL: {self.base_url}")
-        
+
         try:
             self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
             logger.info(f"{self.provider_name} client initialized successfully")
             logger.info(f"Using model: {self.model_name}")
-            
+
             # Log whether this model supports tools
             if self.supports_tools is not None:
                 logger.info(f"Tool support explicitly set to: {self.supports_tools}")
@@ -73,7 +74,9 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                 supports = self._model_supports_tools(self.model_name)
                 logger.info(f"Detected tool support for model {self.model_name}: {supports}")
         except Exception as e:
-            logger.error(f"Failed to initialize {self.provider_name} client: {str(e)}", exc_info=True)
+            logger.error(
+                f"Failed to initialize {self.provider_name} client: {str(e)}", exc_info=True
+            )
             raise
 
     async def chat_completion(
@@ -107,12 +110,14 @@ class OpenAICompatibleProvider(BaseLLMProvider):
 
         # Use default model if not specified
         model_to_use = model or self.model_name
-        logger.info(f"Making chat completion request to {self.provider_name} with model {model_to_use}")
-        
+        logger.info(
+            f"Making chat completion request to {self.provider_name} with model {model_to_use}"
+        )
+
         # Log message count and roles (but not content for privacy)
         message_roles = [msg.get("role", "unknown") for msg in messages]
         logger.debug(f"Request contains {len(messages)} messages with roles: {message_roles}")
-        
+
         # Basic parameters that all OpenAI-compatible providers should support
         request_params = {
             "model": model_to_use,
@@ -131,16 +136,18 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         if tools and self._model_supports_tools(model_to_use):
             request_params["tools"] = tools
             logger.info(f"Including {len(tools)} tools in request")
-            
+
             if tool_choice is not None:
                 request_params["tool_choice"] = tool_choice
                 logger.debug(f"Using tool_choice: {tool_choice}")
         elif tools:
-            logger.warning(f"Tools provided but model {model_to_use} does not support tools. Ignoring tools.")
+            logger.warning(
+                f"Tools provided but model {model_to_use} does not support tools. Ignoring tools."
+            )
 
         # Add any additional parameters
         request_params.update(kwargs)
-        
+
         # Log any additional parameters (excluding messages for privacy)
         additional_params = {k: v for k, v in kwargs.items() if k != "messages"}
         if additional_params:
@@ -151,42 +158,48 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         try:
             logger.debug("Sending request to API")
             response = self.client.chat.completions.create(**request_params)
-            
+
             # Convert to dict for consistency
             response_dict = response.model_dump()
-            
+
             # Calculate and log request time
             request_time = time.time() - start_time
             logger.info(f"API request completed in {request_time:.2f} seconds")
-            
+
             # Log response summary
             choices = response_dict.get("choices", [])
             if choices:
                 first_choice = choices[0]
                 finish_reason = first_choice.get("finish_reason")
-                
+
                 # Check if there are tool calls
                 message = first_choice.get("message", {})
                 tool_calls = message.get("tool_calls", [])
-                
+
                 if tool_calls:
-                    tool_names = [tc.get("function", {}).get("name", "unknown") for tc in tool_calls]
+                    tool_names = [
+                        tc.get("function", {}).get("name", "unknown") for tc in tool_calls
+                    ]
                     logger.info(f"Response contains {len(tool_calls)} tool calls: {tool_names}")
                 else:
                     logger.info(f"Response completed with finish_reason: {finish_reason}")
-                
+
                 # Log token usage
                 usage = response_dict.get("usage", {})
                 if usage:
                     prompt_tokens = usage.get("prompt_tokens", 0)
                     completion_tokens = usage.get("completion_tokens", 0)
                     total_tokens = usage.get("total_tokens", 0)
-                    logger.info(f"Token usage - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")
-            
+                    logger.info(
+                        f"Token usage - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}"
+                    )
+
             return response_dict
         except Exception as e:
             request_time = time.time() - start_time
-            logger.error(f"API request failed after {request_time:.2f} seconds: {str(e)}", exc_info=True)
+            logger.error(
+                f"API request failed after {request_time:.2f} seconds: {str(e)}", exc_info=True
+            )
             raise
 
     def _model_supports_tools(self, model_name: str) -> bool:

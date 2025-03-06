@@ -37,18 +37,18 @@ def create_llm_provider(
 
     # Use empty dict if config not specified
     config = config or {}
-    
+
     # Get provider configuration from constants
     if provider_type in PROVIDER_CONFIG:
         provider_config = PROVIDER_CONFIG[provider_type].copy()
-        
+
         # Override with user-provided config
         for key, value in config.items():
             provider_config[key] = value
-            
+
         # Get provider class name and create appropriate instance
         class_name = provider_config.pop("class_name")
-        
+
         # Special handling for Anthropic provider
         if class_name == "AnthropicProvider" and not ANTHROPIC_AVAILABLE:
             print(
@@ -59,7 +59,7 @@ def create_llm_provider(
             )
             provider_name = provider_config.pop("provider_name", "ANTHROPIC")
             return OpenAICompatibleProvider(provider_name=provider_name, **provider_config)
-            
+
         # Create appropriate provider instance
         if class_name == "AzureOpenAIProvider":
             return AzureOpenAIProvider()

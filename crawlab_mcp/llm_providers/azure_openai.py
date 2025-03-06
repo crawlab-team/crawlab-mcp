@@ -88,7 +88,7 @@ class AzureOpenAIProvider(BaseLLMProvider):
 
         try:
             # Create chat completion
-            response = await self.client.chat.completions.create(**request_params)
+            response = self.client.chat.completions.create(**request_params)
             return response.model_dump()
         except Exception as e:
             # Handle errors and attempt fallback without tools if appropriate

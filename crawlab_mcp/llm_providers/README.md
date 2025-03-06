@@ -6,24 +6,25 @@ This module provides a flexible way to use different LLM (Large Language Model) 
 
 The following LLM providers are supported:
 
-| Provider | Type | Description | Tool Support |
-|----------|------|-------------|-------------|
-| Azure OpenAI | `azure_openai` | Microsoft's Azure-hosted OpenAI API | Yes (GPT-3.5/4) |
-| OpenAI | `openai` | OpenAI's API (GPT models) | Yes (GPT-3.5/4) |
-| Anthropic | `anthropic` | Anthropic's API for Claude models | Limited* |
-| Claude | `claude` | Alias for Anthropic | Limited* |
-| Together AI | `together` | Together AI API for various models | Partial (model-dependent) |
-| Groq | `groq` | Groq API for fast LLM inference | Yes (Llama/Mixtral) |
-| Mistral | `mistral` | Mistral AI API | Yes (most models) |
-| Aliyun Qwen | `aliyun_qwen` | Alibaba Cloud Qwen models API | Yes (Qwen models) |
-| DeepSeek | `deepseek` | DeepSeek AI API | Yes (Chat/Coder models) |
-| Custom | `custom` | Any OpenAI-compatible API | Varies |
+| Provider     | Type           | Description                         | Tool Support              |
+|--------------|----------------|-------------------------------------|---------------------------|
+| Azure OpenAI | `azure_openai` | Microsoft's Azure-hosted OpenAI API | Yes (GPT-3.5/4)           |
+| OpenAI       | `openai`       | OpenAI's API (GPT models)           | Yes (GPT-3.5/4)           |
+| Anthropic    | `anthropic`    | Anthropic's API for Claude models   | Limited*                  |
+| Claude       | `claude`       | Alias for Anthropic                 | Limited*                  |
+| Together AI  | `together`     | Together AI API for various models  | Partial (model-dependent) |
+| Groq         | `groq`         | Groq API for fast LLM inference     | Yes (Llama/Mixtral)       |
+| Mistral      | `mistral`      | Mistral AI API                      | Yes (most models)         |
+| Aliyun Qwen  | `aliyun_qwen`  | Alibaba Cloud Qwen models API       | Yes (Qwen models)         |
+| DeepSeek     | `deepseek`     | DeepSeek AI API                     | Yes (Chat/Coder models)   |
+| Custom       | `custom`       | Any OpenAI-compatible API           | Varies                    |
 
 *Anthropic/Claude uses a different format for tools, so the OpenAI-style function calling is not directly compatible.
 
 ## Tool Support
 
-Tool support (function calling) varies across different LLM providers and models. The system attempts to handle this gracefully:
+Tool support (function calling) varies across different LLM providers and models. The system attempts to handle this
+gracefully:
 
 1. For each provider, we check if it supports tool/function calling
 2. For models within a provider, we check if they support tools
@@ -137,7 +138,7 @@ CUSTOM_MODEL_NAME=your-model-name
 You can also configure the LLM provider programmatically:
 
 ```python
-from crawlab.mcp.llm_providers import create_llm_provider
+from crawlab_mcp.llm_providers import create_llm_provider
 
 # Create a provider with explicit configuration
 llm_provider = create_llm_provider(
@@ -164,4 +165,5 @@ To add a new OpenAI-compatible provider:
 2. Add provider-specific environment variables to `constants.py`
 3. Update this README with the new provider information
 
-For providers with substantially different APIs, you may need to create a new provider class that implements the `BaseLLMProvider` interface.
+For providers with substantially different APIs, you may need to create a new provider class that implements the
+`BaseLLMProvider` interface.

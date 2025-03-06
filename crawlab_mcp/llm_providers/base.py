@@ -23,7 +23,7 @@ class BaseLLMProvider(ABC):
         max_tokens: Optional[int] = None,
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[Union[str, Dict[str, Any], Any]] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Generate a chat completion using the LLM provider.
@@ -46,7 +46,7 @@ class BaseLLMProvider(ABC):
                     {
                         "message": {
                             "content": str,  # The response content
-                            "role": str,     # The role (usually "assistant") 
+                            "role": str,     # The role (usually "assistant")
                             "tool_calls": List[Dict] or None  # Tool calls if any
                         },
                         "index": int,
@@ -54,7 +54,7 @@ class BaseLLMProvider(ABC):
                     }
                 ]
             }
-            
+
             Note: The tool_calls format follows OpenAI's format but may be empty or None
             for providers that don't support tools or if no tools were called.
         """
@@ -64,12 +64,12 @@ class BaseLLMProvider(ABC):
     def get_model_name(self) -> str:
         """Get the default model name for this provider."""
         pass
-        
+
     def has_tool_support(self) -> bool:
         """
         Check if this provider supports tool/function calling.
-        
+
         Returns:
             True if the provider supports tools, False otherwise.
         """
-        return True  # Default implementation assumes tool support 
+        return True  # Default implementation assumes tool support

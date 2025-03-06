@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the server code
-COPY crawlab/mcp/servers/server.py .
+COPY crawlab_mcp/servers/server.py .
 COPY .env .
 
 # Make the server executable

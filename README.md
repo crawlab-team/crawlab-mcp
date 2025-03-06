@@ -29,10 +29,10 @@ After installation, you can use the CLI:
 
 ```bash
 # Start the MCP server
-crawlab-mcp server [--spec PATH_TO_SPEC] [--host HOST] [--port PORT]
+crawlab_mcp-mcp server [--spec PATH_TO_SPEC] [--host HOST] [--port PORT]
 
 # Start the MCP client
-crawlab-mcp client SERVER_URL
+crawlab_mcp-mcp client SERVER_URL
 ```
 
 ### Option 2: Running Locally

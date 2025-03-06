@@ -7,3 +7,7 @@ openapi-spec-validator>=0.7.1
 anthropic>=0.20.0
 openai>=1.65.3
 ruff>=0.2.2
+pytest
+pytest-xdist
+pytest-asyncio
+fastapi

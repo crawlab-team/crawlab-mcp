@@ -19,10 +19,10 @@ NEW_PROVIDER_MODEL_NAME = os.getenv("NEW_PROVIDER_MODEL_NAME", "default-model")
 
 ```python
 elif provider_type == "new_provider":
-    return OpenAICompatibleProvider(
-        provider_name="NEW_PROVIDER",
-        **config
-    )
+return OpenAICompatibleProvider(
+    provider_name="NEW_PROVIDER",
+    **config
+)
 ```
 
 3. Update the README.md file to include the new provider information.
@@ -46,7 +46,7 @@ class MyCustomProvider(BaseLLMProvider):
         self.api_key = api_key or os.getenv("MY_CUSTOM_API_KEY")
         self.model_name = model_name or os.getenv("MY_CUSTOM_MODEL_NAME")
         self.client = None
-        
+
     async def initialize(self) -> None:
         """Initialize the client."""
         # Your initialization code here
@@ -55,7 +55,7 @@ class MyCustomProvider(BaseLLMProvider):
     async def chat_completion(self, messages, model=None, **kwargs) -> Dict[str, Any]:
         """Generate a chat completion using the custom API."""
         # Custom implementation here
-        
+
         # Return a standardized response format matching OpenAI
         return {
             "choices": [
@@ -63,18 +63,18 @@ class MyCustomProvider(BaseLLMProvider):
                     "message": {
                         "content": "Response text",
                         "role": "assistant",
-                        "tool_calls": [] # If tools are supported
+                        "tool_calls": []  # If tools are supported
                     },
                     "index": 0,
                     "finish_reason": "stop"
                 }
             ]
         }
-    
+
     def get_model_name(self) -> str:
         """Get the default model name."""
         return self.model_name
-        
+
     def has_tool_support(self) -> bool:
         """Check if this provider supports tool/function calling."""
         # Custom implementation based on your provider
@@ -96,14 +96,15 @@ __all__ = [
 
 ```python
 elif provider_type == "my_custom":
-    return MyCustomProvider(**config)
+return MyCustomProvider(**config)
 ```
 
 4. Update the documentation and environment variables as described above.
 
 ## Handling Tool Calls
 
-The most complex part of integrating a new provider is often handling tool calls. Providers have different ways of supporting function calling. Your implementation should:
+The most complex part of integrating a new provider is often handling tool calls. Providers have different ways of
+supporting function calling. Your implementation should:
 
 1. Check if the provider actually supports tool calling (`has_tool_support`)
 2. Convert the standard tool format to the provider's format (if needed)

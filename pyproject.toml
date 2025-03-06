@@ -29,7 +29,7 @@ Homepage = "https://github.com/crawlab-team/crawlab-mcp-server"
 Issues = "https://github.com/crawlab-team/crawlab-mcp-server/issues"
 
 [project.scripts]
-crawlab-mcp = "crawlab.mcp.cli:main"
+crawlab-mcp = "crawlab_mcp.cli:main"
 
 [tool.ruff]
 # Enable Pyflakes (`F`), pycodestyle (`E`), isort (`I`), pydocstyle (`D`)
@@ -66,4 +66,8 @@ convention = "google"  # Use Google-style docstrings
 max-complexity = 12
 
 [tool.ruff.lint.extend-per-file-ignores]
-"server.py" = ["E501"]  # Ignore long lines in server.py 
+"server.py" = ["E501"]  # Ignore long lines in server.py
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function" 

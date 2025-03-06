@@ -1,5 +1,9 @@
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 CRAWLAB_API_BASE_URL = os.getenv("CRAWLAB_API_BASE_URL", "http://localhost:8080/api")
 CRAWLAB_API_TOKEN = os.getenv("CRAWLAB_API_TOKEN", "")
 CRAWLAB_USERNAME = os.getenv("CRAWLAB_USERNAME", "admin")
