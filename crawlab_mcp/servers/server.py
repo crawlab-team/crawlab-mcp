@@ -227,7 +227,7 @@ def parse_command_line_arguments():
     parser = argparse.ArgumentParser(description="Crawlab MCP Server")
     parser.add_argument(
         "--spec",
-        default="crawlab_mcp-openapi/openapi.yaml",
+        default="crawlab-openapi/openapi.yaml",
         help="Path to OpenAPI specification YAML file",
     )
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind to")

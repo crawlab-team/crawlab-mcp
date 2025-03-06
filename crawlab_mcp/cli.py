@@ -28,7 +28,7 @@ def main():
     )
     server_parser.add_argument(
         "--spec",
-        default="crawlab_mcp-openapi/openapi.yaml",
+        default="crawlab-openapi/openapi.yaml",
         help="Path to OpenAPI specification YAML file (default: crawlab_mcp-openapi/openapi.yaml)",
     )
     server_parser.add_argument(
