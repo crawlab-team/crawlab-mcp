@@ -156,7 +156,7 @@ def create_mcp_server(spec_path) -> FastMCP:
 
 
 # Add this new function to run the server with SSE transport
-def run_with_sse(mcp_server: FastMCP, host="127.0.0.1", port=8000):
+def run_with_sse(mcp_server: FastMCP, host="127.0.0.1", port=9000):
     """
     Run the MCP server using SSE transport over HTTP
 

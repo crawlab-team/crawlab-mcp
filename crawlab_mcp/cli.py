@@ -35,7 +35,7 @@ def main():
         "--host", default="127.0.0.1", help="Host to bind the server to (default: 127.0.0.1)"
     )
     server_parser.add_argument(
-        "--port", type=int, default=8000, help="Port to listen on (default: 8000)"
+        "--port", type=int, default=9000, help="Port to listen on (default: 9000)"
     )
     server_parser.add_argument(
         "--export-schemas", metavar="FILE", help="Export tool schemas to specified JSON file"
@@ -57,8 +57,8 @@ def main():
     client_parser = subparsers.add_parser("client", help="Run MCP client")
     client_parser.add_argument(
         "--server-url",
-        default="http://localhost:8000/sse",
-        help="URL of the MCP server to connect to (default: http://localhost:8000/sse)",
+        default="http://localhost:9000/sse",
+        help="URL of the MCP server to connect to (default: http://localhost:9000/sse)",
         dest="server_url",
     )
     client_parser.add_argument(
