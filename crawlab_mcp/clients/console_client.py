@@ -457,10 +457,14 @@ You: "Generic"
 
 
 async def main():
-    """Main entry point for the console client"""
+    """
+    Main entry point for the console client interface.
+    This runs an interactive console session with the MCP server.
+    """
+    # Create a console client instance
     client = ConsoleClient()
     try:
-        # Use the server URL from command line arguments
+        # Check for command line arguments
         if len(sys.argv) < 2:
             print("Usage: python -m crawlab_mcp.clients.console_client <server_url>")
             sys.exit(1)
@@ -472,9 +476,16 @@ async def main():
         if os.getenv("MCP_AUTH_TOKEN"):
             headers["Authorization"] = f"Bearer {os.getenv('MCP_AUTH_TOKEN')}"
 
+        # Connect to the server and start the chat loop
+        print(f"Connecting to MCP server at {server_url}...")
         await client.connect_to_server(server_url, headers)
         await client.chat_loop()
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        logger.error(f"Error in main: {str(e)}", exc_info=True)
+        sys.exit(1)
     finally:
+        # Clean up resources
         await client.cleanup()
 
 

@@ -1,13 +1,13 @@
 import os
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import time
 
 # Add the parent directory to sys.path to import the client module
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from crawlab_mcp.agents.task_planner import TaskPlanner
 from crawlab_mcp.clients.client import MCPClient
 
 
@@ -15,123 +15,192 @@ from crawlab_mcp.clients.client import MCPClient
 def mcp_client():
     """Create a real MCPClient for testing"""
     client = MCPClient()
-    # Using the real LLM provider instead of mocking
     return client
 
 
-# Test for when task_planner is None
-@pytest.mark.asyncio
-async def test_should_use_planning_no_planner(mcp_client):
-    """Test that _should_use_planning returns False when task_planner is None"""
-    mcp_client.task_planner = None
-    result = await mcp_client._should_use_planning("test query")
-    assert result is False
+# Test MCPClient core properties
+def test_mcp_client_init(mcp_client):
+    """Test that MCPClient initializes with the correct core properties"""
+    assert mcp_client.session is None
+    assert isinstance(mcp_client.tools, list)
+    assert isinstance(mcp_client.tool_tags, list)
+    assert mcp_client.connection_type == "sse"
+    assert hasattr(mcp_client, "api_key")
 
-
-# Parameters for testing different query types
-@pytest.mark.parametrize(
-    "query,expected,description",
-    [
-        ("What time is it?", False, "Simple query should return False"),
-        (
-            "List all spiders and run the first one",
-            True,
-            "Simple multi-step workflow should return True",
-        ),
-        (
-            "Fetch data from multiple APIs, combine the results, and generate a summary report with charts.",
-            True,
-            "Complex multi-step workflow should return True",
-        ),
-        (
-            "Query the database for all users who signed up last month, send them an email, and update their status.",
-            True,
-            "Multi-step process should return True",
-        ),
-        ("Tell me a joke", False, "Simple request should return False"),
-    ],
-)
+# Test connection method returns an exit stack
 @pytest.mark.asyncio
-async def test_should_use_planning_with_real_llm(mcp_client, query, expected, description):
+async def test_connect_to_server_returns_exit_stack(monkeypatch, mcp_client):
+    """Test that connect_to_server returns an exit stack for resource management"""
+    # Mock dependencies
+    mock_read_stream = AsyncMock()
+    mock_write_stream = AsyncMock()
+    mock_session = AsyncMock()
+    mock_exit_stack = AsyncMock()
+    mock_client_session = AsyncMock()
+
+    # Mock the AsyncExitStack
+    mock_exit_stack.enter_async_context.side_effect = [
+        (mock_read_stream, mock_write_stream),
+        mock_session
+    ]
+
+    # Setup mock responses
+    mock_session.list_tools.return_value = MagicMock(tools=[])
+    mock_session.call_tool.return_value = MagicMock(
+        content='{"tags": []}'
+    )
+
+    # Apply patches
+    monkeypatch.setattr("crawlab_mcp.clients.client.AsyncExitStack", lambda: mock_exit_stack)
+    monkeypatch.setattr("crawlab_mcp.clients.client.ClientSession", lambda *args: mock_client_session)
+    monkeypatch.setattr("crawlab_mcp.clients.client.sse_client", AsyncMock(
+        return_value=(mock_read_stream, mock_write_stream)))
+
+    # Call the method
+    result = await mcp_client.connect_to_server("http://test-server.com")
+
+    # Verify result is the exit stack
+    assert result == mock_exit_stack
+
+@pytest.mark.asyncio
+async def test_real_connection_to_server(mcp_client):
+    """Test a real connection to the MCP server.
+    
+    This test starts a real MCP server using the CLI module and then
+    connects to it with a real client.
     """
-    Test _should_use_planning with real LLM responses for different types of queries
-
-    This test uses real LLM calls instead of mocks to test actual behavior
-    """
-    # Initialize a task planner with all required parameters
-    mock_tools = []  # Empty list of tools for testing purposes
-    mock_session = MagicMock()  # Mock session object
-    mcp_client.task_planner = TaskPlanner(
-        llm_provider=mcp_client.llm_provider, tools=mock_tools, session=mock_session
+    import asyncio
+    import contextlib
+    import multiprocessing
+    import os
+    import tempfile
+    
+    from crawlab_mcp.servers.server import create_mcp_server, run_with_sse
+    
+    # Generate a random port number to avoid conflicts
+    import random
+    port = random.randint(20000, 30000)
+    host = "127.0.0.1"
+    
+    # Use a temp file for the openapi spec
+    # If this fails, we can use a fixed path from the repo
+    try:
+        # Create a temporary file for a minimal OpenAPI spec
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yaml') as f:
+            spec_file = f.name
+            f.write("""
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /test:
+    get:
+      operationId: test
+      summary: Test endpoint
+      responses:
+        '200':
+          description: Success
+            """)
+    except Exception as e:
+        # If temp file creation fails, use a default spec from the repo
+        print(f"Failed to create temp spec file: {e}")
+        # Look for spec file in common locations
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        spec_file = os.path.join(repo_root, "openapi", "openapi.yaml")
+        if not os.path.exists(spec_file):
+            spec_file = os.path.join(repo_root, "..", "openapi", "openapi.yaml")
+    
+    # Define server process function to run in another process
+    def run_server(host, port, spec_path):
+        try:
+            # Create and run the server
+            mcp_server = create_mcp_server(spec_path)
+            run_with_sse(mcp_server, host=host, port=port)
+        except KeyboardInterrupt:
+            print("Server stopped by Ctrl+C")
+        except Exception as e:
+            print(f"Server error: {e}")
+    
+    # Start server in a separate process
+    server_process = multiprocessing.Process(
+        target=run_server,
+        args=(host, port, spec_file),
+        daemon=True  # Automatically terminate when parent process exits
     )
+    
+    try:
+        # Start the server
+        server_process.start()
+        
+        # Wait for server to start
+        print(f"Waiting for server to start on {host}:{port}...")
+        for _ in range(10):
+            await asyncio.sleep(0.5)
+            try:
+                # Try connecting to see if server is up
+                reader, writer = await asyncio.open_connection(host, port)
+                writer.close()
+                await writer.wait_closed()
+                print(f"Server started on {host}:{port}")
+                break
+            except (ConnectionRefusedError, OSError):
+                continue
+        else:
+            raise RuntimeError(f"Failed to connect to server on {host}:{port}")
+        
+        # Connect to the real server
+        server_url = f"http://{host}:{port}/sse"
+        exit_stack = await mcp_client.connect_to_server(server_url)
+        
+        try:
+            # Verify client is properly initialized
+            assert mcp_client.session is not None, "Session should be established"
+            assert hasattr(mcp_client.session, "initialize"), "Session should have initialize method"
+            
+            # Verify tools are loaded
+            assert isinstance(mcp_client.tools, list), "Tools should be a list"
+            
+            # Verify tags are loaded
+            assert isinstance(mcp_client.tool_tags, list), "Tool tags should be a list"
+            
+            # Test list_tools operation to confirm the connection is working
+            tools_response = await mcp_client.session.list_tools()
+            assert hasattr(tools_response, "tools"), "Should get tools response"
+            
+            print(f"Connection successful, found {len(mcp_client.tools)} tools")
+        finally:
+            # Clean up client resources
+            await exit_stack.aclose()
+    
+    finally:
+        # Clean up the server process
+        if server_process.is_alive():
+            print("Stopping server...")
+            # Use both SIGTERM and then SIGKILL if needed
+            server_process.terminate()
+            
+            # Give it a moment to terminate gracefully
+            for _ in range(5):
+                if not server_process.is_alive():
+                    break
+                time.sleep(0.2)
+            
+            # If still alive, force kill
+            if server_process.is_alive():
+                print("Server didn't terminate gracefully, killing...")
+                server_process.kill()
+                server_process.join(timeout=1)
+            
+            # Don't wait indefinitely - just detach if still running
+            if server_process.is_alive():
+                print("WARNING: Server process couldn't be terminated properly")
+                # Setting daemon=True earlier should ensure it's killed on exit
+        
+        # Remove temp file if created
+        if spec_file and os.path.exists(spec_file) and spec_file.endswith('.yaml'):
+            try:
+                os.unlink(spec_file)
+            except OSError:
+                pass
 
-    # Call the actual method with the query
-    result = await mcp_client._should_use_planning(query)
-
-    # Assert based on expected result (but allow flexibility since we're using real LLM)
-    # In real LLM testing, we add a note about potential variations
-    if result != expected:
-        pytest.xfail(
-            f"LLM response may vary: expected {expected} but got {result} for query: {query}"
-        )
-
-    assert result == expected, f"Failed for query: {query} - {description}"
-
-
-# Test for error handling
-@pytest.mark.asyncio
-async def test_should_use_planning_exception_handling(monkeypatch, mcp_client):
-    """Test that _should_use_planning returns False when an exception occurs"""
-    # Set up task planner
-    mock_tools = []  # Empty list of tools for testing purposes
-    mock_session = MagicMock()  # Mock session object
-    mcp_client.task_planner = TaskPlanner(
-        llm_provider=mcp_client.llm_provider, tools=mock_tools, session=mock_session
-    )
-
-    # Create a function that raises an exception when called
-    async def mock_chat_completion(*args, **kwargs):
-        raise Exception("Simulated API error")
-
-    # Apply the monkeypatch to replace the real method
-    monkeypatch.setattr(mcp_client.llm_provider, "chat_completion", mock_chat_completion)
-
-    # Call the method and verify it handles the exception
-    result = await mcp_client._should_use_planning("query that causes exception")
-    assert result is False, "Method should return False when exception occurs"
-
-
-# Parametrized test for different response formats
-@pytest.mark.parametrize(
-    "response_content,expected",
-    [
-        ("true", True),
-        ("false", False),
-        ("  true  ", True),
-        ("  false  ", False),
-        ("TRUE", True),
-        ("FALSE", False),
-    ],
-)
-@pytest.mark.asyncio
-async def test_should_use_planning_response_formatting(
-    monkeypatch, mcp_client, response_content, expected
-):
-    """Test that _should_use_planning correctly handles different response formats"""
-    # Set up task planner
-    mock_tools = []  # Empty list of tools for testing purposes
-    mock_session = MagicMock()  # Mock session object
-    mcp_client.task_planner = TaskPlanner(
-        llm_provider=mcp_client.llm_provider, tools=mock_tools, session=mock_session
-    )
-
-    # Create a function that returns the test response
-    async def mock_chat_completion(*args, **kwargs):
-        return {"choices": [{"message": {"content": response_content}}]}
-
-    # Apply the monkeypatch
-    monkeypatch.setattr(mcp_client.llm_provider, "chat_completion", mock_chat_completion)
-
-    # Call the method and verify the result
-    result = await mcp_client._should_use_planning("test query")
-    assert result == expected, f"Failed for response content: '{response_content}'"
