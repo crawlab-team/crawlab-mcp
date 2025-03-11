@@ -28,8 +28,8 @@ def main():
     )
     server_parser.add_argument(
         "--spec",
-        default="crawlab-openapi/openapi.yaml",
-        help="Path to OpenAPI specification YAML file (default: crawlab_mcp-openapi/openapi.yaml)",
+        default="../openapi/openapi.yaml",
+        help="Path to OpenAPI specification YAML file (default: ../openapi/openapi.yaml)",
     )
     server_parser.add_argument(
         "--host", default="127.0.0.1", help="Host to bind the server to (default: 127.0.0.1)"
@@ -107,7 +107,7 @@ def main():
     elif args.command == "client":
         # Check if the client module is available
         try:
-            from crawlab_mcp.clients.client import main as client_main
+            from crawlab_mcp.clients.console_client import main as client_main
 
             # Set environment variables if provided
             if args.auth_token:
