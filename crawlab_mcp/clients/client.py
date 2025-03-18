@@ -1,15 +1,15 @@
-import json
 import logging
 import os
 import sys
 import time
 from contextlib import AsyncExitStack
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
-from mcp import ClientSession
+from mcp import ClientSession, Tool
 from mcp.client.sse import sse_client
+from pydantic import BaseModel
 
 load_dotenv()  # load environment variables from .env
 
@@ -26,13 +26,18 @@ logger.setLevel(logging.DEBUG)
 mcp_logger = logging.getLogger("mcp.communication")
 mcp_logger.setLevel(logging.DEBUG)
 
+class ToolItem(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
 
 class MCPClient:
     def __init__(self):
         # Initialize core properties
         self.session = None
-        self.tools = []
-        self.tool_tags = []  # Renamed from tags
+        self.tools: List[Tool] = []
+        self.tool_items: List[ToolItem] = []
         self.connection_type = "sse"  # Default to SSE connection type
         
         # Get MCP API key
@@ -91,44 +96,12 @@ class MCPClient:
             # Fetch available tools from the server
             logger.info("Fetching available tools from server")
             tools_response = await self.session.list_tools()
-            self.tools = tools_response.tools
-
+            print(tools_response)
+            self.tools: List[Tool] = tools_response.tools
+            self.tool_items = [ToolItem(name=tool.name, description=tool.description) for tool in self.tools]
             tool_names = [tool.name for tool in self.tools]
-            logger.info(f"Received {len(self.tools)} tools from server")
+            logger.info(f"Received {len(self.tool_items)} tools from server")
             logger.debug(f"Available tools: {tool_names}")
-
-            # Fetch available tags from the server
-            logger.info("Fetching available tags from server")
-            tags_response = await self.session.call_tool("list_tags")
-
-            # Parse the tags response correctly
-            try:
-                # Handle the case where the response might be structured differently
-                if hasattr(tags_response, "content") and isinstance(tags_response.content, str):
-                    content_data = json.loads(tags_response.content)
-                    if isinstance(content_data, dict) and "tags" in content_data:
-                        self.tool_tags = content_data["tags"]
-                    else:
-                        self.tool_tags = content_data
-                elif (
-                    hasattr(tags_response, "content")
-                    and isinstance(tags_response.content, list)
-                    and len(tags_response.content) > 0
-                ):
-                    # Handle case where content is a list of message objects
-                    text_content = tags_response.content[0].text
-                    content_data = json.loads(text_content)
-                    self.tool_tags = content_data.get("tags", [])
-                else:
-                    # Fallback to empty list if we can't parse the response
-                    logger.warning("Couldn't parse tags response format, using empty tags list")
-                    self.tool_tags = []
-            except Exception as e:
-                logger.error(f"Error parsing tags response: {str(e)}", exc_info=True)
-                self.tool_tags = []
-
-            logger.info(f"Received {len(self.tool_tags)} tags from server")
-            logger.debug(f"Available tags: {self.tool_tags}")
 
             connection_time = time.time() - start_time
             logger.info(f"Server connection completed in {connection_time:.2f} seconds")

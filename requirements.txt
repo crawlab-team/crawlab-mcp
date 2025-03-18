@@ -12,3 +12,4 @@ pytest-xdist
 pytest-asyncio
 fastapi
 aiohttp>=3.11.10
+pydantic>=2.9.2

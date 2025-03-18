@@ -1,7 +1,7 @@
 """
 Azure OpenAI provider implementation.
 """
-
+import logging
 from typing import Any, Dict, List, Optional, Union
 
 from openai import AzureOpenAI, NotGiven
@@ -82,26 +82,14 @@ class AzureOpenAIProvider(BaseLLMProvider):
             request_params["tools"] = tools
             if tool_choice is not None and tool_choice != "none":
                 request_params["tool_choice"] = tool_choice
+        logging.info(f"Request params: {request_params}")
 
         # Add any other kwargs
         request_params.update(kwargs)
 
-        try:
-            # Create chat completion
-            response = self.client.chat.completions.create(**request_params)
-            return response.model_dump()
-        except Exception as e:
-            # Handle errors and attempt fallback without tools if appropriate
-            if tools and "tools" in str(e).lower():
-                # Try again without tools
-                request_params.pop("tools", None)
-                request_params.pop("tool_choice", None)
-
-                response = await self.client.chat.completions.create(**request_params)
-                return response.model_dump()
-            else:
-                # Re-raise other errors
-                raise
+        # Create chat completion
+        response = self.client.chat.completions.create(**request_params)
+        return response.model_dump()
 
     def _model_supports_tools(self, model_name: str) -> bool:
         """Check if the specific model supports tools/function calling."""

@@ -4,11 +4,11 @@ import logging
 import os
 import sys
 import time
-
 from contextlib import AsyncExitStack
-from .client import MCPClient
-from ..llm_providers import create_llm_provider
+
 from ..agents.task_planner import TaskPlanner
+from ..llm_providers import create_llm_provider
+from .client import MCPClient
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -161,19 +161,19 @@ Your task is to determine whether and what tools would be useful for answering t
 You should only use tools available in the API. 
 If no tools are needed or not exist in the available tools, respond with "Generic".
 
-Available API tags with tools:
-{json.dumps(self.tool_tags)}
+Available tools:
+{json.dumps([t.model_dump() for t in self.tool_items])}
 
 If the query requires using the API, respond with a JSON array of tool names that would be helpful.
 If the query is generic and doesn't require API access, respond with "Generic".
 
 Example 1:
 User: "List all spiders in the system"
-You: ["getSpiderList"]
+You: ["GET_spiders"]
 
 Example 2:
 User: "How many nodes are available?"
-You: ["getNodeList"]
+You: ["GET_nodes"]
 
 Example 3:
 User: "What is the capital of France?"
@@ -310,6 +310,7 @@ You: "Generic"
                     if tool.name in tools:
                         # Try to get detailed schema information if available
                         schema = tool.inputSchema
+                        print(tool)
 
                         # Ensure the schema has proper "required" fields and enum information
                         if isinstance(schema, dict) and schema.get("properties"):
@@ -325,6 +326,7 @@ You: "Generic"
                                             prop["description"] = f"[REQUIRED] {desc}"
 
                         # Prepare the tool definition with enhanced schema
+                        print(schema)
                         detailed_tools.append(
                             {
                                 "type": "function",
