@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/crawlab-team-crawlab-mcp-badge.png)](https://mseep.ai/app/crawlab-team-crawlab-mcp)
+
 # Crawlab MCP Server
 
 This is a Model Context Protocol (MCP) server for Crawlab, allowing AI applications to interact with Crawlab's functionality.
